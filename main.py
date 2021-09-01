@@ -4,12 +4,35 @@
 import os
 import sys
 import asyncio
+import pyrebase
 import platform
 from datetime import datetime
 from typing import Callable, Any, List
 
 from aioconsole import ainput
 from bleak import BleakClient, discover
+
+class Database:
+
+    def __init__(self):
+        firebase_config = {
+            "apiKey": "AIzaSyAKf_7vnJNeeGfnrS99RvZ-WaE4ge68JFM",
+            "authDomain": "smart-home-7c688.firebaseapp.com",
+            "databaseURL": "https://smart-home-7c688-default-rtdb.firebaseio.com",
+            "storageBucket": "smart-home-7c688.appspot.com"
+        }
+
+        firebase = pyrebase.initialize_app(firebase_config)
+        self.db = firebase.database()
+
+    def writeToDB(self, name: str, value: str):
+        now = datetime.now()
+        timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
+        data = {
+            "timestamp": timestamp,
+            "message": value
+        }
+        self.db.child(name).push(data)
 
 class Connection:
 
@@ -19,11 +42,13 @@ class Connection:
         self,
         loop: asyncio.AbstractEventLoop,
         read_characteristic: str,
-        write_characteristic: str
+        write_characteristic: str,
+        data_dump_handler: Callable[[str, str], None]
     ):
         self.loop = loop
         self.read_characteristic = read_characteristic
         self.write_characteristic = write_characteristic
+        self.data_dump_handler = data_dump_handler
 
         self.connected = False
         self.connected_device = None
@@ -95,8 +120,10 @@ class Connection:
         self.client = BleakClient(devices[response].address, loop=self.loop)
 
     def notification_handler(self, sender: str, data_bytes: bytearray):
-        response = data_bytes.decode()
-        print(response)
+        data = data_bytes.decode()
+        category = data.split(":")[0]
+        value = data.split(":")[1][1:]
+        self.data_dump_handler(category, value)
 
 
 #############
@@ -129,8 +156,9 @@ if __name__ == "__main__":
     # Create the event loop.
     loop = asyncio.get_event_loop()
 
+    db = Database()
     connection = Connection(
-        loop, read_characteristic, write_characteristic
+        loop, read_characteristic, write_characteristic, db.writeToDB
     )
     try:
         asyncio.ensure_future(connection.manager())
