@@ -6,8 +6,10 @@ import sys
 import asyncio
 import pyrebase
 import platform
+import bluetooth
 from datetime import datetime
 from typing import Callable, Any, List
+from time import sleep
 
 from aioconsole import ainput
 from bleak import BleakClient, discover
@@ -119,11 +121,14 @@ class Connection:
         self.connected_device = devices[response]
         self.client = BleakClient(devices[response].address, loop=self.loop)
 
-    def notification_handler(self, sender: str, data_bytes: bytearray):
+    async def notification_handler(self, sender: str, data_bytes: bytearray):
         data = data_bytes.decode()
         category = data.split(":")[0]
         value = data.split(":")[1][1:]
         self.data_dump_handler(category, value)
+
+        if(value == "Door has been opened" and await checkIfHome()):
+            self.data_dump_handler("notifications", "Status changed to Home")
 
 
 #############
@@ -143,6 +148,13 @@ async def main():
     while True:
         # YOUR APP CODE WOULD GO HERE.
         await asyncio.sleep(5)
+
+async def checkIfHome():
+    await asyncio.sleep(2)
+    if(bluetooth.lookup_name("BC:A5:8B:34:07:FF") == "Milan's Note 9"):
+        return True
+    else:
+        return False
 
 
 #############
