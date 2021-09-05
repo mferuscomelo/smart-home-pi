@@ -1,6 +1,10 @@
 # Adapted from: https://github.com/Ladvien/arduino_ble_sense
 # IMPORTANT: Use PowerShell instead of WSL to connect with BLE
 
+# sudo usermod -a -G bluetooth pi
+# sudo systemctl daemon-reload
+# sudo systemctl restart bluetooth
+
 import os
 import sys
 import asyncio
