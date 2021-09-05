@@ -129,11 +129,23 @@ class Connection:
         data = data_bytes.decode()
         category = data.split(":")[0]
         value = data.split(":")[1][1:]
-        self.data_dump_handler(category, value)
 
-        if(value == "Door has been opened" and await checkIfHome()):
-            self.data_dump_handler("notifications", "Status changed to Home")
+        if("Door" in value):
+            if(not is_home):
+                self.data_dump_handler(category, value)
+        else:
+            self.data_dump_handler(category, value)
 
+async def checkIfHome(is_currently_home):
+    await asyncio.sleep(2)
+    if(bluetooth.lookup_name("BC:A5:8B:34:07:FF") == "Milan's Note 9" and is_currently_home == False):
+        connection.data_dump_handler("notifications", "Status changed to Home")
+        return True
+    elif(bluetooth.lookup_name("BC:A5:8B:34:07:FF") != "Milan's Note 9" and is_currently_home == True):
+        connection.data_dump_handler("notifications", "Status changed to Away")
+        return False
+    else:
+        return is_currently_home
 
 #############
 # Loops
@@ -150,15 +162,9 @@ async def user_console_manager(connection: Connection):
 
 async def main():
     while True:
-        # YOUR APP CODE WOULD GO HERE.
+        global is_home
+        is_home = await checkIfHome(is_home)
         await asyncio.sleep(5)
-
-async def checkIfHome():
-    await asyncio.sleep(2)
-    if(bluetooth.lookup_name("BC:A5:8B:34:07:FF") == "Milan's Note 9"):
-        return True
-    else:
-        return False
 
 
 #############
@@ -166,6 +172,7 @@ async def checkIfHome():
 #############
 read_characteristic = "00001143-0000-1000-8000-00805f9b34fb"
 write_characteristic = "00001142-0000-1000-8000-00805f9b34fb"
+is_home = True
 
 if __name__ == "__main__":
 
