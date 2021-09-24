@@ -5,18 +5,17 @@
 # sudo systemctl daemon-reload
 # sudo systemctl restart bluetooth
 
-import os
-import sys
 import asyncio
 import pyrebase
-import platform
 import bluetooth
 from datetime import datetime
-from typing import Callable, Any, List
+from typing import Callable
 from time import sleep
 
 from aioconsole import ainput
-from bleak import BleakClient, discover
+from bleak import BleakClient, BleakScanner
+from bleak.backends.scanner import AdvertisementData
+from bleak.backends.device import BLEDevice
 
 class Database:
 
@@ -38,6 +37,7 @@ class Database:
             "timestamp": timestamp,
             "message": value
         }
+        print("Sending:", data)
         self.db.child(name).push(data)
 
 class Connection:
@@ -47,11 +47,13 @@ class Connection:
     def __init__(
         self,
         loop: asyncio.AbstractEventLoop,
+        device_name: str,
         read_characteristic: str,
         write_characteristic: str,
         data_dump_handler: Callable[[str, str], None]
     ):
         self.loop = loop
+        self.device_name = device_name
         self.read_characteristic = read_characteristic
         self.write_characteristic = write_characteristic
         self.data_dump_handler = data_dump_handler
@@ -99,34 +101,22 @@ class Connection:
         except Exception as e:
             print(e)
 
+    def match_name(self, device: BLEDevice, adv: AdvertisementData):
+        if self.device_name == adv.local_name:
+            print("Found device")
+            return True
+
+        return False
+
     async def select_device(self):
         print("Bluetooh LE hardware warming up...")
         await asyncio.sleep(2.0)  # Wait for BLE to initialize.
-        devices = await discover()
+        self.connected_device = await BleakScanner.find_device_by_filter(self.match_name)
+        self.client = BleakClient(self.connected_device, loop=self.loop)
 
-        print("Please select device: ")
-        for i, device in enumerate(devices):
-            print(f"{i}: {device.name}")
-
-        response = -1
-        while True:
-            response = await ainput("Select device: ")
-            try:
-                response = int(response.strip())
-            except:
-                print("Please make valid selection.")
-
-            if response > -1 and response < len(devices):
-                break
-            else:
-                print("Please make valid selection.")
-
-        print(f"Connecting to {devices[response].name}")
-        self.connected_device = devices[response]
-        self.client = BleakClient(devices[response].address, loop=self.loop)
-
-    async def notification_handler(self, sender: str, data_bytes: bytearray):
+    def notification_handler(self, sender: str, data_bytes: bytearray):
         data = data_bytes.decode()
+        print("received: ", data)
         category = data.split(":")[0]
         value = data.split(":")[1][1:]
 
@@ -170,6 +160,7 @@ async def main():
 #############
 # App Main
 #############
+device_name = "Arduino Nano 33 BLE Sense"
 read_characteristic = "00001143-0000-1000-8000-00805f9b34fb"
 write_characteristic = "00001142-0000-1000-8000-00805f9b34fb"
 is_home = True
@@ -181,7 +172,7 @@ if __name__ == "__main__":
 
     db = Database()
     connection = Connection(
-        loop, read_characteristic, write_characteristic, db.writeToDB
+        loop, device_name, read_characteristic, write_characteristic, db.writeToDB
     )
     try:
         asyncio.ensure_future(connection.manager())
