@@ -8,6 +8,7 @@
 import asyncio
 import pyrebase
 import bluetooth
+import logging
 from datetime import datetime
 from typing import Callable
 from time import sleep
@@ -37,7 +38,7 @@ class Database:
             "timestamp": timestamp,
             "message": value
         }
-        print("Sending:", data)
+        logging.info(f"Sending: {repr(data)}")
         self.db.child(name).push(data)
 
 class Connection:
@@ -64,7 +65,7 @@ class Connection:
     def on_disconnect(self, client: BleakClient):
         self.connected = False
         # Put code here to handle what happens on disconnect.
-        print(f"Disconnected from {self.connected_device.name}!")
+        logging.info(f"Disconnected from {self.connected_device.name}!")
 
     async def cleanup(self):
         if self.client:
@@ -72,7 +73,7 @@ class Connection:
             await self.client.disconnect()
 
     async def manager(self):
-        print("Starting connection manager.")
+        logging.info("Starting connection manager.")
         while True:
             if self.client:
                 await self.connect()
@@ -87,7 +88,7 @@ class Connection:
             await self.client.connect()
             self.connected = self.client.is_connected
             if self.connected:
-                print(F"Connected to {self.connected_device.name}")
+                logging.info(f"Connected to {self.connected_device.name}")
                 self.client.set_disconnected_callback(self.on_disconnect)
                 await self.client.start_notify(
                     self.read_characteristic, self.notification_handler,
@@ -97,26 +98,25 @@ class Connection:
                         break
                     await asyncio.sleep(3.0)
             else:
-                print(f"Failed to connect to {self.connected_device.name}")
+                logging.error(f"Failed to connect to {self.connected_device.name}")
         except Exception as e:
-            print(e)
+            logging.error(e)
 
     def match_name(self, device: BLEDevice, adv: AdvertisementData):
         if self.device_name == adv.local_name:
-            print("Found device")
+            logging.info("Found device")
             return True
 
         return False
 
     async def select_device(self):
-        print("Bluetooh LE hardware warming up...")
+        logging.info("Bluetooh LE hardware warming up...")
         await asyncio.sleep(2.0)  # Wait for BLE to initialize.
         self.connected_device = await BleakScanner.find_device_by_filter(self.match_name)
         self.client = BleakClient(self.connected_device, loop=self.loop)
 
     def notification_handler(self, sender: str, data_bytes: bytearray):
         data = data_bytes.decode()
-        print("received: ", data)
         category = data.split(":")[0]
         value = data.split(":")[1][1:]
 
@@ -165,6 +165,14 @@ read_characteristic     = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 write_characteristic    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 is_home = True
 
+logging.basicConfig(
+    filename='smart_home.log', 
+    format='%(asctime)s: %(message)s', 
+    datefmt='%m/%d/%Y %I:%M:%S %p', 
+    encoding='utf-8', 
+    level=logging.DEBUG
+)
+
 if __name__ == "__main__":
 
     # Create the event loop.
@@ -180,9 +188,8 @@ if __name__ == "__main__":
         asyncio.ensure_future(main())
         loop.run_forever()
     except KeyboardInterrupt:
-        print()
-        print("User stopped program.")
+        logging.info("User stopped program.")
     finally:
-        print("Disconnecting...")
+        logging.info("Disconnecting...")
         loop.run_until_complete(connection.cleanup())
         exit()
