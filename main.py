@@ -160,9 +160,9 @@ async def main():
 #############
 # App Main
 #############
-device_name = "Arduino Nano 33 BLE Sense"
-read_characteristic = "00001143-0000-1000-8000-00805f9b34fb"
-write_characteristic = "00001142-0000-1000-8000-00805f9b34fb"
+device_name             = "Arduino Nano 33 BLE Sense"
+read_characteristic     = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+write_characteristic    = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 is_home = True
 
 if __name__ == "__main__":
