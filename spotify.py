@@ -4,7 +4,7 @@ from secrets import SPOTIFY_OATH_TOKEN
 
 url = "https://api.spotify.com/v1/me/player/play"
 data = json.dumps({
-  "context_uri": "spotify:playlist:37i9dQZF1DX1s9knjP51Oa"
+  "context_uri": "spotify:playlist:37i9dQZF1DX3Ogo9pFvBkY"
 })
 
 response = requests.put(
