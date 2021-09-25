@@ -12,6 +12,7 @@ import logging
 from datetime import datetime
 from typing import Callable
 from time import sleep
+from spotify import play_music
 
 from aioconsole import ainput
 from bleak import BleakClient, BleakScanner
@@ -130,6 +131,7 @@ async def checkIfHome(is_currently_home):
     await asyncio.sleep(2)
     if(bluetooth.lookup_name("BC:A5:8B:34:07:FF") == "Milan's Note 9" and is_currently_home == False):
         connection.data_dump_handler("notifications", "Status changed to Home")
+        play_music()
         return True
     elif(bluetooth.lookup_name("BC:A5:8B:34:07:FF") != "Milan's Note 9" and is_currently_home == True):
         await asyncio.sleep(2)
