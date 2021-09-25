@@ -168,7 +168,7 @@ is_home = True
 logging.basicConfig(
     filename='smart_home.log', 
     format='%(asctime)s: %(message)s', 
-    datefmt='%m/%d/%Y %I:%M:%S %p', 
+    datefmt='%d/%m/%Y %I:%M:%S %p', 
     encoding='utf-8', 
     level=logging.DEBUG
 )
