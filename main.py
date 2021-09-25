@@ -132,8 +132,13 @@ async def checkIfHome(is_currently_home):
         connection.data_dump_handler("notifications", "Status changed to Home")
         return True
     elif(bluetooth.lookup_name("BC:A5:8B:34:07:FF") != "Milan's Note 9" and is_currently_home == True):
-        connection.data_dump_handler("notifications", "Status changed to Away")
-        return False
+        await asyncio.sleep(2)
+        if(bluetooth.lookup_name("BC:A5:8B:34:07:FF") != "Milan's Note 9" and is_currently_home == True):
+            await asyncio.sleep(2)
+            connection.data_dump_handler("notifications", "Status changed to Away")
+            return False
+        else:
+            return is_currently_home
     else:
         return is_currently_home
 
